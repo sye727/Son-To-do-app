@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>캘린더 할일</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #ffffff;
+      --muted: #8a8a8a;
+      --point: #39ff14;
+      --urgent: #ff3131;
+      --line: #2a2a2a;
+      --card: #0c0c0c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+      letter-spacing: 0.06em;
+    }
+
+    .app {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    button,
+    select,
+    input {
+      font-family: inherit;
+      letter-spacing: inherit;
+      color: inherit;
+    }
+
+    .icon-btn,
+    .add-btn {
+      background: transparent;
+      border: 1px solid var(--point);
+      color: var(--point);
+      cursor: pointer;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .icon-btn:hover,
+    .add-btn:hover {
+      background: var(--point);
+      color: #000;
+    }
+
+    .weekdays,
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .weekdays {
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .day,
+    .pad {
+      min-height: 84px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+
+    .day {
+      position: relative;
+      padding: 10px;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .day:hover {
+      border-color: #4a4a4a;
+    }
+
+    .day.today {
+      border-color: var(--point);
+      color: var(--point);
+    }
+
+    .day.selected {
+      background: #10240c;
+      border-color: var(--point);
+      box-shadow: inset 0 0 0 1px var(--point);
+    }
+
+    .dot {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--point);
+    }
+
+    .panel {
+      margin-top: 28px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+
+    .panel h2 {
+      margin: 0 0 18px;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+    }
+
+    .empty {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0 0 20px;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    li.done {
+      opacity: 0.4;
+    }
+
+    li.done .title {
+      text-decoration: line-through;
+    }
+
+    .title {
+      flex: 1;
+      font-size: 15px;
+    }
+
+    input[type="checkbox"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      border: 1px solid var(--point);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    input[type="checkbox"]:checked {
+      background: var(--point);
+      box-shadow: inset 0 0 0 3px #000;
+    }
+
+    .badge {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      padding: 4px 8px;
+      border: 1px solid var(--muted);
+      color: var(--muted);
+    }
+
+    .badge.urgent {
+      border-color: var(--urgent);
+      color: var(--urgent);
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"],
+    select {
+      background: #000;
+      border: 1px solid var(--line);
+      padding: 0 12px;
+      height: 42px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+      outline: 1px solid var(--point);
+      border-color: var(--point);
+    }
+
+    .add-btn {
+      height: 42px;
+      padding: 0 18px;
+    }
+
+    @media (max-width: 640px) {
+      .day,
+      .pad {
+        min-height: 52px;
+        padding: 6px;
+        font-size: 12px;
+      }
+
+      form {
+        flex-wrap: wrap;
+      }
+
+      input[type="text"] {
+        flex-basis: 100%;
+      }
+
+      select,
+      .add-btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1 id="month-label"></h1>
+      <div class="nav">
+        <button class="icon-btn" id="prev" type="button" aria-label="이전 달">‹</button>
+        <button class="icon-btn" id="next" type="button" aria-label="다음 달">›</button>
+      </div>
+    </header>
+    <div class="weekdays" aria-hidden="true">
+      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+    </div>
+    <div class="grid" id="grid" role="grid"></div>
+    <section class="panel" id="panel">
+      <h2 id="panel-title"></h2>
+      <p class="empty" id="empty" hidden>이 날짜의 할일이 없습니다.</p>
+      <ul id="list"></ul>
+      <form id="form">
+        <input id="title" type="text" placeholder="할일 제목" maxlength="80" autocomplete="off">
+        <select id="priority" aria-label="우선순위">
+          <option value="normal">일반</option>
+          <option value="urgent">긴급</option>
+        </select>
+        <button class="add-btn" type="submit">추가</button>
+      </form>
+    </section>
+  </main>
+  <script>
+    const STORAGE_KEY = "calendar-todos";
+    const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+    const monthLabel = document.getElementById("month-label");
+    const grid = document.getElementById("grid");
+    const panelTitle = document.getElementById("panel-title");
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    const form = document.getElementById("form");
+    const titleInput = document.getElementById("title");
+    const priorityInput = document.getElementById("priority");
+
+    const today = new Date();
+    let viewYear = today.getFullYear();
+    let viewMonth = today.getMonth();
+    let selected = dateKey(today);
+    let todos = loadTodos();
+
+    document.getElementById("prev").addEventListener("click", () => shiftMonth(-1));
+    document.getElementById("next").addEventListener("click", () => shiftMonth(1));
+    form.addEventListener("submit", addTodo);
+    list.addEventListener("change", toggleTodo);
+
+    render();
+
+    function dateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseKey(key) {
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function loadTodos() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const data = raw ? JSON.parse(raw) : {};
+        return data && typeof data === "object" ? data : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveTodos() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    function shiftMonth(delta) {
+      const next = new Date(viewYear, viewMonth + delta, 1);
+      viewYear = next.getFullYear();
+      viewMonth = next.getMonth();
+      render();
+    }
+
+    function render() {
+      monthLabel.textContent = `${viewYear}년 ${viewMonth + 1}월`;
+      renderGrid();
+      renderPanel();
+    }
+
+    function renderGrid() {
+      grid.replaceChildren();
+      const first = new Date(viewYear, viewMonth, 1);
+      const startPad = first.getDay();
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      const todayKey = dateKey(today);
+
+      for (let i = 0; i < startPad; i += 1) {
+        const pad = document.createElement("div");
+        pad.className = "pad";
+        grid.append(pad);
+      }
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const key = dateKey(new Date(viewYear, viewMonth, day));
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "day";
+        button.dataset.date = key;
+        button.setAttribute("role", "gridcell");
+        button.textContent = String(day);
+        if (key === todayKey) button.classList.add("today");
+        if (key === selected) button.classList.add("selected");
+        if ((todos[key] || []).length > 0) {
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          button.append(dot);
+        }
+        button.addEventListener("click", () => {
+          selected = key;
+          render();
+          titleInput.focus();
+        });
+        grid.append(button);
+      }
+    }
+
+    function renderPanel() {
+      const date = parseKey(selected);
+      panelTitle.textContent = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}요일`;
+      const items = todos[selected] || [];
+      list.replaceChildren();
+      empty.hidden = items.length > 0;
+
+      items.forEach((item, index) => {
+        const li = document.createElement("li");
+        if (item.done) li.classList.add("done");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = item.done;
+        checkbox.dataset.index = String(index);
+        checkbox.setAttribute("aria-label", `${item.title} 완료`);
+
+        const title = document.createElement("span");
+        title.className = "title";
+        title.textContent = item.title;
+
+        const badge = document.createElement("span");
+        badge.className = item.priority === "urgent" ? "badge urgent" : "badge";
+        badge.textContent = item.priority === "urgent" ? "긴급" : "일반";
+
+        li.append(checkbox, title, badge);
+        list.append(li);
+      });
+    }
+
+    function addTodo(event) {
+      event.preventDefault();
+      const title = titleInput.value.trim();
+      if (!title) return;
+      const items = todos[selected] ? todos[selected].slice() : [];
+      items.push({
+        title,
+        priority: priorityInput.value === "urgent" ? "urgent" : "normal",
+        done: false
+      });
+      todos[selected] = items;
+      saveTodos();
+      titleInput.value = "";
+      priorityInput.value = "normal";
+      render();
+      titleInput.focus();
+    }
+
+    function toggleTodo(event) {
+      const checkbox = event.target;
+      if (!(checkbox instanceof HTMLInputElement) || checkbox.type !== "checkbox") return;
+      const index = Number(checkbox.dataset.index);
+      const items = todos[selected];
+      if (!items || !items[index]) return;
+      items[index].done = checkbox.checked;
+      saveTodos();
+      renderPanel();
+    }
+  </script>
+</body>
+</html>
